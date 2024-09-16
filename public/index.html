@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Analyzer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Add your CSS here */
+        #loading {
+            display: none;
+            font-size: 1.2em;
+            text-align: center;
+            margin: 20px 0;
+        }
+        #loading-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            height: 20px;
+            margin-top: 10px;
+            position: relative;
+        }
+        #loading-bar span {
+            display: block;
+            height: 100%;
+            background-color: #4caf50;
+            width: 0;
+            border-radius: 5px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: width 0.4s;
+        }
+    </style>
+</head>
+<body>
+    <h1>Music Analyzer</h1>
+    <p>Upload an MP3 file or provide a YouTube link to analyze instruments and tempo.</p>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <!-- Option 1: Upload file -->
+        <div class="input-group">
+            <input type="file" id="fileInput" name="file" accept="audio/*">
+        </div>
+
+        <p>OR</p>
+
+        <!-- Option 2: YouTube link -->
+        <div class="input-group">
+            <label for="youtubeLink">Enter YouTube link:</label>
+            <input type="url" id="youtubeLink" name="youtubeLink" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+
+        <div>
+            <button type="submit">Analyze</button>
+        </div>
+    </form>
+
+    <div id="loading">
+        Loading...
+        <div id="loading-bar">
+            <span></span>
+        </div>
+    </div>
+    <div id="results"></div>
+    <div id="error" style="color: red;"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

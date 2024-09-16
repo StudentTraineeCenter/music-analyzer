@@ -39,7 +39,7 @@ def analyze():
                 tempo = tempo[0]
 
             # Mock list of instruments
-            instruments = "drums, guitar, bass, vocals"
+            instruments = "N/A"
 
             # Úklid
             os.remove(file_path)
@@ -84,7 +84,7 @@ def analyze():
                 tempo = tempo[0]
 
             # Mock list of instruments
-            instruments = "drums, guitar, bass, vocals"
+            instruments = "N/A"
 
             # Úklid
             os.remove(mp3_filename)

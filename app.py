@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, render_template
 import librosa
 from pydub import AudioSegment
 import numpy as np
+import yt_dlp
 
 app = Flask(__name__)
 
@@ -19,27 +20,28 @@ def analyze():
         os.makedirs('uploads')
 
     if file:
+        # Nahrání a analýza MP3 souboru
         filename = file.filename
         file_path = os.path.join('uploads', filename)
         file.save(file_path)
 
         try:
-            # Convert to WAV
+            # Konverze na WAV
             sound = AudioSegment.from_file(file_path)
             wav_path = file_path.replace('.mp3', '.wav')
             sound.export(wav_path, format="wav")
 
-            # Analyze with librosa
+            # Analýza pomocí librosa
             y, sr = librosa.load(wav_path)
             tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 
             if isinstance(tempo, (list, np.ndarray)):
                 tempo = tempo[0]
 
-            # Mock list of instruments for simplicity
+            # Mock list of instruments
             instruments = "drums, guitar, bass, vocals"
 
-            # Cleanup
+            # Úklid
             os.remove(file_path)
             os.remove(wav_path)
 
@@ -53,11 +55,49 @@ def analyze():
             return jsonify({'error': str(e)}), 500
 
     elif youtube_link:
-        # Add logic for handling YouTube link analysis here
-        return jsonify({
-            'tempo': 120,  # Mock response for now
-            'instruments': "vocals, guitar"
-        })
+        try:
+            # Stáhnout audio pomocí yt-dlp
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': 'uploads/%(id)s.%(ext)s',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }]
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(youtube_link, download=True)
+                mp3_filename = f"uploads/{info_dict['id']}.mp3"
+
+            # Konverze na WAV
+            sound = AudioSegment.from_file(mp3_filename)
+            wav_path = mp3_filename.replace('.mp3', '.wav')
+            sound.export(wav_path, format="wav")
+
+            # Analýza pomocí librosa
+            y, sr = librosa.load(wav_path)
+            tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+
+            if isinstance(tempo, (list, np.ndarray)):
+                tempo = tempo[0]
+
+            # Mock list of instruments
+            instruments = "drums, guitar, bass, vocals"
+
+            # Úklid
+            os.remove(mp3_filename)
+            os.remove(wav_path)
+
+            return jsonify({
+                'tempo': float(tempo),
+                'instruments': instruments
+            })
+
+        except Exception as e:
+            print(f"Error during YouTube processing: {e}")
+            return jsonify({'error': str(e)}), 500
 
     return jsonify({'error': 'No file or link provided.'}), 400
 

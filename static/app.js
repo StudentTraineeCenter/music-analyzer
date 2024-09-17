@@ -31,29 +31,30 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
         }
     });
 
-    // Handle response
-    xhr.onload = function() {
-        document.getElementById('loading').style.display = 'none';  // Hide loading bar
-        const data = JSON.parse(xhr.responseText);
+    // Set up the request
+    xhr.open('POST', '/analyze', true);
 
-        if (xhr.status === 200 && !data.error) {
-            document.getElementById('results').innerHTML = `
-                <p>Tempo: ${data.tempo}</p>
-                <p>Instruments: ${data.instruments}</p>
-                <p>Notes: ${data.notes || 'N/A'}</p>
-                <p>Chords: ${data.chords || 'N/A'}</p>
-            `;
+    // Define what happens on successful data submission
+    xhr.onload = function() {
+        document.getElementById('loading').style.display = 'none';
+        if (xhr.status >= 200 && xhr.status < 300) {
+            const response = JSON.parse(xhr.responseText);
+            if (response.error) {
+                document.getElementById('error').innerText = response.error;
+            } else {
+                document.getElementById('results').innerText = `Tempo: ${response.tempo} BPM\nInstruments: ${response.instruments}`;
+            }
         } else {
-            document.getElementById('error').innerText = 'Error: ' + (data.error || 'Unknown error occurred.');
+            document.getElementById('error').innerText = 'Error analyzing the file.';
         }
     };
 
+    // Define what happens in case of an error
     xhr.onerror = function() {
-        document.getElementById('loading').style.display = 'none';  // Hide loading bar
-        document.getElementById('error').innerText = 'Error occurred during analysis.';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').innerText = 'An error occurred.';
     };
 
-    // Open the request and send the form data
-    xhr.open('POST', '/analyze');
+    // Send the request with the form data
     xhr.send(formData);
 });

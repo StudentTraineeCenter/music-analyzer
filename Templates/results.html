@@ -42,6 +42,10 @@
         .volume-control {
             margin-top: 10px;
         }
+
+        .instrument-name {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -52,13 +56,26 @@
         <p>Tempo: {{ tempo }} BPM</p>
         <h2>Instruments:</h2>
         <ul id="instruments-list">
-            {% for instrument in instruments %}
-                <li>
-                    {{ instrument }}
-                    <input type="range" class="volume-control" id="volume-{{ loop.index }}" min="0" max="1" step="0.01" value="1" />
-                    <label for="volume-{{ loop.index }}"></label>
-                </li>
-            {% endfor %}
+            <li>
+                <span class="instrument-name">Voice</span>
+                <input type="range" class="volume-control" id="volume-voice" min="0" max="1" step="0.01" value="1" />
+            </li>
+            <li>
+                <span class="instrument-name">Guitar</span>
+                <input type="range" class="volume-control" id="volume-guitar" min="0" max="1" step="0.01" value="1" />
+            </li>
+            <li>
+                <span class="instrument-name">Bass</span>
+                <input type="range" class="volume-control" id="volume-bass" min="0" max="1" step="0.01" value="1" />
+            </li>           
+            <li>
+                <span class="instrument-name">Drums</span>
+                <input type="range" class="volume-control" id="volume-drums" min="0" max="1" step="0.01" value="1" />
+            </li>
+            <li>
+                <span class="instrument-name">Other</span>
+                <input type="range" class="volume-control" id="volume-other" min="0" max="1" step="0.01" value="1" />
+            </li>
         </ul>
         <audio id="audio-player" controls>
             <source src="{{ audio_file_url }}" type="audio/mp3">
@@ -67,16 +84,38 @@
     </div>
 
     <script>
-        window.addEventListener('beforeunload', function() {
-            fetch('/cleanup');
+        // Map individual sliders to specific audio channels (these channels would represent the separated stems)
+        const audioPlayer = document.getElementById('audio-player');
+        document.getElementById('volume-voice').addEventListener('input', function() {
+            const volume = this.value;
+            console.log('Voice volume set to: ' + volume);
         });
 
-        document.querySelectorAll('.volume-control').forEach(function(slider) {
-            slider.addEventListener('input', function(event) {
-                const audioPlayer = document.getElementById('audio-player');
-                const volume = event.target.value;
-                audioPlayer.volume = volume;  // Nastaví hlasitost audio přehrávače
-            });
+        document.getElementById('volume-guitar').addEventListener('input', function() {
+            const volume = this.value;
+            // Placeholder: Adjust volume for the guitar stem
+            console.log('Guitar volume set to: ' + volume);
+            // Actual logic will depend on separated stems (e.g., using Web Audio API)
+        });
+
+        document.getElementById('volume-bass').addEventListener('input', function() {
+            const volume = this.value;
+            console.log('Bass volume set to: ' + volume);
+        });
+
+      
+        document.getElementById('volume-drums').addEventListener('input', function() {
+            const volume = this.value;
+            console.log('Drums volume set to: ' + volume);
+        });
+
+        document.getElementById('volume-other').addEventListener('input', function() {
+            const volume = this.value;
+            console.log('Other volume set to: ' + volume);
+        });
+
+        window.addEventListener('beforeunload', function() {
+            fetch('/cleanup');
         });
     </script>
 </body>

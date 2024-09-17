@@ -1,6 +1,6 @@
 import os
 import shutil
-from flask import Flask, request, jsonify, render_template, url_for
+from flask import Flask, request, jsonify, render_template, url_for, send_from_directory
 import librosa
 from pydub import AudioSegment
 import numpy as np
@@ -75,10 +75,10 @@ def analyze():
             shutil.move(wav_path, temp_wav_path)
 
             # Vráti URL na dočasné soubory
-            audio_url = url_for('static', filename=os.path.basename(temp_audio_path))
+            audio_url = url_for('serve_temp_file', filename=os.path.basename(temp_audio_path))
 
             return jsonify({
-                'redirect_url': url_for('results', tempo=tempo, instruments=','.join(instruments), audio_file_url=audio_url)
+                'redirect_url': url_for('results', tempo=tempo, instruments=','.join(instruments), audio_file_url=os.path.basename(temp_audio_path))
             })
 
         except Exception as e:
@@ -90,9 +90,8 @@ def analyze():
 def results():
     tempo = request.args.get('tempo')
     instruments = request.args.get('instruments').split(',')
-    audio_file_url = url_for('static', filename=os.path.basename(TEMPORARY_UPLOADS_FOLDER + '/' + request.args.get('audio_file_url')))
+    audio_file_url = url_for('serve_temp_file', filename=request.args.get('audio_file_url'))
     return render_template('results.html', tempo=tempo, instruments=instruments, audio_file_url=audio_file_url)
-
 
 @app.route('/cleanup')
 def cleanup():
@@ -101,6 +100,10 @@ def cleanup():
         if os.path.isfile(file_path):
             os.remove(file_path)
     return 'Cleanup done'
+
+@app.route('/temporary_uploads/<filename>')
+def serve_temp_file(filename):
+    return send_from_directory(TEMPORARY_UPLOADS_FOLDER, filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -70,14 +70,6 @@ button:hover {
     transform: scale(1.1); /* Zvětšení tlačítka */
 }
 
-#results {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #ffffff2f;
-    border-radius: 5px;
-    width: 50%;
-    text-align: center;
-}
 
 #error {
     color: red;

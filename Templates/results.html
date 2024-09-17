@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+      
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+
+        #backButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+        }
+
+        audio {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #results-container {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <button id="backButton" onclick="window.location.href = '/';">Back</button>
+    
+    <div id="results-container">
+        <h1>Music Analysis Results</h1>
+        <p>Tempo: {{ tempo }} BPM</p>
+        <h2>Instruments:</h2>
+        <ul>
+            {% for instrument in instruments %}
+                <li>{{ instrument }} <button>Mute</button></li>
+            {% endfor %}
+        </ul>
+        
+        <audio controls>
+            <source src="/path/to/your/audiofile" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+</body>
+</html>

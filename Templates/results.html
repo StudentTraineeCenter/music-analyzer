@@ -6,8 +6,6 @@
     <title>Analysis Results</title>
     <link rel="stylesheet" href="/static/styles.css">
     <style>
-      
-
         ul {
             list-style-type: none;
             padding: 0;
@@ -17,7 +15,6 @@
             margin-bottom: 10px;
             font-size: 20px;
         }
-
 
         #backButton {
             position: absolute;
@@ -41,6 +38,10 @@
             width: 80%;
             max-width: 800px;
         }
+
+        .volume-control {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -50,12 +51,16 @@
         <h1>Music Analysis Results</h1>
         <p>Tempo: {{ tempo }} BPM</p>
         <h2>Instruments:</h2>
-        <ul>
+        <ul id="instruments-list">
             {% for instrument in instruments %}
-                <li>{{ instrument }} <button>Mute</button></li>
+                <li>
+                    {{ instrument }}
+                    <input type="range" class="volume-control" id="volume-{{ loop.index }}" min="0" max="1" step="0.01" value="1" />
+                    <label for="volume-{{ loop.index }}"></label>
+                </li>
             {% endfor %}
         </ul>
-        <audio controls>
+        <audio id="audio-player" controls>
             <source src="{{ audio_file_url }}" type="audio/mp3">
             Your browser does not support the audio element.
         </audio>
@@ -65,6 +70,14 @@
         window.addEventListener('beforeunload', function() {
             fetch('/cleanup');
         });
+
+        document.querySelectorAll('.volume-control').forEach(function(slider) {
+            slider.addEventListener('input', function(event) {
+                const audioPlayer = document.getElementById('audio-player');
+                const volume = event.target.value;
+                audioPlayer.volume = volume;  // Nastaví hlasitost audio přehrávače
+            });
+        });
     </script>
-    </body>
+</body>
 </html>

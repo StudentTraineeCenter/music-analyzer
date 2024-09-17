@@ -90,8 +90,9 @@ def analyze():
 def results():
     tempo = request.args.get('tempo')
     instruments = request.args.get('instruments').split(',')
-    audio_file_url = request.args.get('audio_file_url')
+    audio_file_url = url_for('static', filename=os.path.basename(TEMPORARY_UPLOADS_FOLDER + '/' + request.args.get('audio_file_url')))
     return render_template('results.html', tempo=tempo, instruments=instruments, audio_file_url=audio_file_url)
+
 
 @app.route('/cleanup')
 def cleanup():

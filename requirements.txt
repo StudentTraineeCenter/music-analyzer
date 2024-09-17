@@ -1,0 +1,5 @@
+Flask
+librosa
+pydub
+nympy
+yt-dlp

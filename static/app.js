@@ -49,3 +49,6 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     xhr.send(formData);
 });
+window.addEventListener('beforeunload', function() {
+    fetch('/cleanup');
+});

@@ -67,7 +67,11 @@
             <li>
                 <span class="instrument-name">Bass</span>
                 <input type="range" class="volume-control" id="volume-bass" min="0" max="1" step="0.01" value="1" />
-            </li>           
+            </li>
+            <li>
+                <span class="instrument-name">Piano</span>
+                <input type="range" class="volume-control" id="volume-piano" min="0" max="1" step="0.01" value="1" />
+            </li>
             <li>
                 <span class="instrument-name">Drums</span>
                 <input type="range" class="volume-control" id="volume-drums" min="0" max="1" step="0.01" value="1" />
@@ -84,8 +88,9 @@
     </div>
 
     <script>
-        // Map individual sliders to specific audio channels (these channels would represent the separated stems)
+        // Map individual sliders to specific audio channels
         const audioPlayer = document.getElementById('audio-player');
+
         document.getElementById('volume-voice').addEventListener('input', function() {
             const volume = this.value;
             console.log('Voice volume set to: ' + volume);
@@ -94,12 +99,16 @@
         document.getElementById('volume-guitar').addEventListener('input', function() {
             const volume = this.value;
             console.log('Guitar volume set to: ' + volume);
-            // Actual logic will depend on separated stems (e.g., using Web Audio API)
         });
 
         document.getElementById('volume-bass').addEventListener('input', function() {
             const volume = this.value;
             console.log('Bass volume set to: ' + volume);
+        });
+
+        document.getElementById('volume-piano').addEventListener('input', function() {
+            const volume = this.value;
+            console.log('Piano volume set to: ' + volume);
         });
 
         document.getElementById('volume-drums').addEventListener('input', function() {

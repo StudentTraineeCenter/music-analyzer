@@ -6,7 +6,6 @@
     <title>Music Analyzer</title>
     <link rel="stylesheet" href="/static/styles.css">
     <style>
-        /* Add your CSS here */
         #loading {
             display: none;
             font-size: 1.2em;
@@ -33,6 +32,26 @@
             left: 0;
             transition: width 0.4s;
         }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        select, input[type="url"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dddddd00;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -40,17 +59,23 @@
     <p>Upload an MP3 file or provide a YouTube link to analyze instruments and tempo.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
-        <!-- Option 1: Upload file -->
         <div class="input-group">
             <input type="file" id="fileInput" name="file" accept="audio/*">
         </div>
 
         <p>OR</p>
 
-        <!-- Option 2: YouTube link -->
         <div class="input-group">
             <label for="youtubeLink">Enter YouTube link:</label>
             <input type="url" id="youtubeLink" name="youtubeLink" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+
+        <div class="input-group">
+            <label for="demucsModel">Select Model:</label>
+            <select id="demucsModel" name="demucsModel">
+                <option value="mdx_extra">HQ (slow)</option>
+                <option value="mdx_extra_q">Standard (fast)</option>
+            </select>
         </div>
 
         <div>
@@ -68,5 +93,38 @@
     <div id="error" style="color: red;"></div>
 
     <script src="/static/app.js"></script>
+    <script>
+        const form = document.getElementById('uploadForm');
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            document.getElementById('loading').style.display = 'block';
+            let progressBar = document.getElementById('loading-bar').querySelector('span');
+            progressBar.style.width = '0'; // Reset progress bar
+
+            const formData = new FormData(form);
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const interval = setInterval(async () => {
+                    const progressResponse = await fetch('/progress');
+                    const progressData = await progressResponse.json();
+                    progressBar.style.width = progressData.progress + '%';
+
+                    if (progressData.progress === 100) {
+                        clearInterval(interval);
+                        window.location.href = '/results';
+                    }
+                }, 1000);  // Check every second
+            } else {
+                const errorData = await response.json();
+                document.getElementById('error').innerText = errorData.error;
+                document.getElementById('loading').style.display = 'none'; // Hide loading on error
+            }
+        });
+    </script>
 </body>
 </html>

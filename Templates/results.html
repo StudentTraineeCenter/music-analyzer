@@ -23,12 +23,6 @@
             font-size: 18px;
         }
 
-        audio {
-            margin-top: 20px;
-            width: 100%;
-            max-width: 600px;
-        }
-
         #results-container {
             text-align: center;
             margin-top: 20px;
@@ -57,7 +51,7 @@
         <h2>Instruments:</h2>
         <ul id="instruments-list">
             <li>
-                <span class="instrument-name">Voice</span>
+                <span class="instrument-name">Vocals</span>
                 <input type="range" class="volume-control" id="volume-voice" min="0" max="1" step="0.01" value="1" />
             </li>
             <li>
@@ -88,42 +82,46 @@
     </div>
 
     <script>
-        // Map individual sliders to specific audio channels
-        const audioPlayer = document.getElementById('audio-player');
+    const audioPlayer = document.getElementById('audio-player');
+    const volumeControls = {
+        vocals: document.getElementById('volume-vocals'),
+        guitar: document.getElementById('volume-guitar'),
+        bass: document.getElementById('volume-bass'),
+        piano: document.getElementById('volume-piano'),
+        drums: document.getElementById('volume-drums'),
+        other: document.getElementById('volume-other')
+    };
 
-        document.getElementById('volume-voice').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Voice volume set to: ' + volume);
-        });
+    Object.keys(volumeControls).forEach(instrument => {
+        volumeControls[instrument].addEventListener('input', function() {
+            const volumeValues = {
+                voice: volumeControls.vocals.value,
+                guitar: volumeControls.guitar.value,
+                bass: volumeControls.bass.value,
+                piano: volumeControls.piano.value,
+                drums: volumeControls.drums.value,
+                other: volumeControls.other.value
+            };
 
-        document.getElementById('volume-guitar').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Guitar volume set to: ' + volume);
+            // Send volume settings to the server for mixing
+            fetch('/mix', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(volumeValues)
+            })
+            .then(response => response.json())
+            .then(data => {
+                audioPlayer.src = data.audio_url;  // Update audio source
+                audioPlayer.play();  // Play mixed audio
+            });
         });
+    });
 
-        document.getElementById('volume-bass').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Bass volume set to: ' + volume);
-        });
-
-        document.getElementById('volume-piano').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Piano volume set to: ' + volume);
-        });
-
-        document.getElementById('volume-drums').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Drums volume set to: ' + volume);
-        });
-
-        document.getElementById('volume-other').addEventListener('input', function() {
-            const volume = this.value;
-            console.log('Other volume set to: ' + volume);
-        });
-
-        window.addEventListener('beforeunload', function() {
-            fetch('/cleanup');
-        });
+    window.addEventListener('beforeunload', function() {
+        fetch('/cleanup', { method: 'POST' });
+    });
     </script>
 </body>
 </html>

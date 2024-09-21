@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, session
 import librosa
 import numpy as np
@@ -20,6 +21,28 @@ os.makedirs(TEMPORARY_UPLOADS_FOLDER, exist_ok=True)
 @app.route('/')
 def index():
     return render_template('index.html')
+
+def is_file_free(filepath):
+    """Check if a file can be accessed for writing."""
+    try:
+        with open(filepath, 'a'):
+            pass
+        return True
+    except IOError:
+        return False
+
+def safe_rename(src, dest):
+    """Safely rename a file with retries."""
+    for _ in range(10):  # Try up to 10 times
+        if is_file_free(src):
+            try:
+                os.rename(src, dest)
+                return True
+            except OSError as e:
+                print(f"Error renaming {src} to {dest}: {e}")
+        time.sleep(1)  # Wait 1 second before retrying
+    print(f"Failed to rename {src} to {dest} after multiple attempts.")
+    return False
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -57,31 +80,50 @@ def analyze():
             tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 
             if isinstance(tempo, np.ndarray):
-                tempo = tempo.item() 
+                tempo = tempo.item()
             tempo = float(tempo)
 
             # Use Demucs to separate instruments
             subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
 
+            # Wait for file operations to settle
+            time.sleep(2)
+
             # Move the separated files to the temporary folder
             separated_folder = os.path.join('separated', demucs_model, os.path.splitext(os.path.basename(file_path))[0])
             if os.path.exists(separated_folder):
                 for f in os.listdir(separated_folder):
-                    shutil.move(os.path.join(separated_folder, f), os.path.join(TEMPORARY_UPLOADS_FOLDER, f))
+                    src_path = os.path.join(separated_folder, f)
+                    dest_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, f)
+                    safe_rename(src_path, dest_path)
 
-            # Return URLs for the separated files and tempo
-            instruments = [f for f in os.listdir(TEMPORARY_UPLOADS_FOLDER)]
-            audio_url = url_for('serve_temp_file', filename=instruments[0])
+            # Sloučení stop do jedné
+            output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'final_output.mp3')
+            merge_command = [
+                'ffmpeg',
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
+                '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
+                '-filter_complex', 'amerge=inputs=6',
+                '-c:a', 'libmp3lame',
+                '-ac', '2',  # Stereo output
+                output_file_path
+            ]
+            subprocess.run(merge_command, check=True)
+
+            # Return URL for the merged file and tempo
+            audio_url = url_for('serve_temp_file', filename='final_output.mp3')
 
             # Store instruments in session as JSON
-            session['instruments'] = json.dumps(instruments)
-            session['audio_file_url'] = os.path.basename(instruments[0])
+            session['audio_file_url'] = 'final_output.mp3'
             session['tempo'] = tempo
 
             return jsonify({
                 'redirect_url': url_for('results')
             })
-
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -89,26 +131,32 @@ def analyze():
 
 @app.route('/results')
 def results():
-    instruments = json.loads(session.get('instruments', '[]'))
     audio_file_url = url_for('serve_temp_file', filename=session.get('audio_file_url'))
     tempo = session.get('tempo')
-    return render_template('results.html', instruments=instruments, audio_file_url=audio_file_url, tempo=tempo)
+    return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
-@app.route('/cleanup')
+@app.route('/cleanup', methods=['POST'])
 def cleanup():
     # Remove files from uploads folder
     for filename in os.listdir(UPLOADS_FOLDER):
         file_path = os.path.join(UPLOADS_FOLDER, filename)
         if os.path.isfile(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                print(f"Error removing {file_path}: {e}")
 
     # Remove files from temporary uploads folder
     for filename in os.listdir(TEMPORARY_UPLOADS_FOLDER):
         file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, filename)
         if os.path.isfile(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                print(f"Error removing {file_path}: {e}")
 
     return 'Cleanup done'
+
 
 @app.route('/temporary_uploads/<filename>')
 def serve_temp_file(filename):

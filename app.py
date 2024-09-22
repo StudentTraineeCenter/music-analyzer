@@ -1,12 +1,10 @@
 import os
-import shutil
 import time
 from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, session
 import librosa
 import numpy as np
 import yt_dlp
 import subprocess
-import json
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Required for session management
@@ -28,22 +26,23 @@ def get_progress():
     return jsonify({'progress': progress})
 
 def is_file_free(filepath):
-    try:
-        with open(filepath, 'a'):
-            pass
-        return True
-    except IOError:
-        return False
+    for _ in range(20):  # Increased number of attempts
+        try:
+            with open(filepath, 'a'):
+                return True
+        except IOError:
+            time.sleep(0.5)  # Wait before trying again
+    return False
 
 def safe_rename(src, dest):
-    for _ in range(10):
+    for _ in range(20):  # Increased number of attempts
         if is_file_free(src):
             try:
                 os.rename(src, dest)
                 return True
             except OSError as e:
                 print(f"Error renaming {src} to {dest}: {e}")
-        time.sleep(1)
+        time.sleep(1)  # Wait before trying again
     print(f"Failed to rename {src} to {dest} after multiple attempts.")
     return False
 
@@ -67,11 +66,14 @@ def analyze():
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': os.path.join(UPLOADS_FOLDER, '%(id)s.%(ext)s'),
-                'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
+                'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}],
+                'noplaylist': True,
+                'nooverwrites': True,
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(youtube_link, download=True)
                 file_path = os.path.join(UPLOADS_FOLDER, f"{info_dict['id']}.mp3")
+
             progress = 30  # Update progress
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -85,7 +87,7 @@ def analyze():
             subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
             progress = 70  # Update progress
 
-            time.sleep(2)
+            time.sleep(2)  # Wait to ensure demucs has finished
 
             separated_folder = os.path.join('separated', demucs_model, os.path.splitext(os.path.basename(file_path))[0])
             if os.path.exists(separated_folder):
@@ -111,7 +113,7 @@ def analyze():
             subprocess.run(merge_command, check=True)
             progress = 100  # Update progress
 
-            audio_url = url_for('serve_temp_file', filename='final_output.mp3')
+            # Save session variables
             session['audio_file_url'] = 'final_output.mp3'
             session['tempo'] = tempo
 
@@ -129,14 +131,14 @@ def results():
 
 @app.route('/cleanup', methods=['POST'])
 def cleanup():
-    for folder in [UPLOADS_FOLDER, TEMPORARY_UPLOADS_FOLDER]:
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
-            if os.path.isfile(file_path):
-                try:
-                    os.remove(file_path)
-                except OSError as e:
-                    print(f"Error removing {file_path}: {e}")
+    # Remove files only after leaving the page
+    for filename in os.listdir(TEMPORARY_UPLOADS_FOLDER):
+        file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, filename)
+        if os.path.isfile(file_path):
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                print(f"Error removing {file_path}: {e}")
     return 'Cleanup done'
 
 @app.route('/temporary_uploads/<filename>')

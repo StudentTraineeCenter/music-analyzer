@@ -50,6 +50,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
     xhr.send(formData);
 });
 
+// Progress bar polling
 setInterval(function() {
     fetch('/progress')
         .then(response => response.json())
@@ -58,6 +59,7 @@ setInterval(function() {
         });
 }, 1000);
 
+// Audio controls
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const gainNodes = {};
 
@@ -89,4 +91,9 @@ document.querySelectorAll('.volume-slider').forEach(slider => {
         const label = this.dataset.track;
         setVolume(label, volume);
     });
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    navigator.sendBeacon('/cleanup');
 });

@@ -49,6 +49,44 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     xhr.send(formData);
 });
-window.addEventListener('beforeunload', function() {
-    fetch('/cleanup');
+
+setInterval(function() {
+    fetch('/progress')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading-bar').querySelector('span').style.width = data.progress + '%';
+        });
+}, 1000);
+
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const gainNodes = {};
+
+const loadAudio = (source, label) => {
+    const audioElement = new Audio(source);
+    const sourceNode = audioContext.createMediaElementSource(audioElement);
+    const gainNode = audioContext.createGain();
+
+    sourceNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    gainNodes[label] = gainNode;
+
+    audioElement.play();
+
+    audioElement.addEventListener('ended', () => {
+        fetch('/cleanup', { method: 'POST' });
+    });
+};
+
+const setVolume = (label, volume) => {
+    if (gainNodes[label]) {
+        gainNodes[label].gain.setValueAtTime(volume, audioContext.currentTime);
+    }
+};
+
+document.querySelectorAll('.volume-slider').forEach(slider => {
+    slider.addEventListener('input', function() {
+        const volume = parseFloat(this.value);
+        const label = this.dataset.track;
+        setVolume(label, volume);
+    });
 });

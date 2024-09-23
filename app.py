@@ -7,7 +7,7 @@ import yt_dlp
 import subprocess
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Required for session management
+app.secret_key = 'your_secret_key'
 
 UPLOADS_FOLDER = 'uploads'
 TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
@@ -26,23 +26,23 @@ def get_progress():
     return jsonify({'progress': progress})
 
 def is_file_free(filepath):
-    for _ in range(20):  # Increased number of attempts
+    for _ in range(20):
         try:
             with open(filepath, 'a'):
                 return True
         except IOError:
-            time.sleep(0.5)  # Wait before trying again
+            time.sleep(0.5)
     return False
 
 def safe_rename(src, dest):
-    for _ in range(20):  # Increased number of attempts
+    for _ in range(20):
         if is_file_free(src):
             try:
                 os.rename(src, dest)
                 return True
             except OSError as e:
                 print(f"Error renaming {src} to {dest}: {e}")
-        time.sleep(1)  # Wait before trying again
+        time.sleep(1)
     print(f"Failed to rename {src} to {dest} after multiple attempts.")
     return False
 
@@ -60,7 +60,7 @@ def analyze():
         filename = file.filename
         file_path = os.path.join(UPLOADS_FOLDER, filename)
         file.save(file_path)
-        progress = 10  # Update progress
+        progress = 10
     elif youtube_link:
         try:
             ydl_opts = {
@@ -74,7 +74,7 @@ def analyze():
                 info_dict = ydl.extract_info(youtube_link, download=True)
                 file_path = os.path.join(UPLOADS_FOLDER, f"{info_dict['id']}.mp3")
 
-            progress = 30  # Update progress
+            progress = 30
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -85,7 +85,7 @@ def analyze():
             tempo = float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item()
 
             subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
-            progress = 70  # Update progress
+            progress = 70
 
             time.sleep(2)  # Wait to ensure demucs has finished
 
@@ -95,11 +95,12 @@ def analyze():
                     src_path = os.path.join(separated_folder, f)
                     dest_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, f)
                     safe_rename(src_path, dest_path)
-            progress = 90  # Update progress
+            progress = 90
 
             output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'final_output.mp3')
             merge_command = [
                 'ffmpeg',
+                '-y',  # Automatically overwrite existing files
                 '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
                 '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
                 '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
@@ -110,10 +111,15 @@ def analyze():
                 '-ac', '2',
                 output_file_path
             ]
-            subprocess.run(merge_command, check=True)
-            progress = 100  # Update progress
 
-            # Save session variables
+            # Run merge command and check for errors
+            try:
+                subprocess.run(merge_command, check=True)
+                progress = 100
+            except subprocess.CalledProcessError as e:
+                print(f"Error merging audio files: {e}")
+                return jsonify({'error': 'Error merging audio files.'}), 500
+
             session['audio_file_url'] = 'final_output.mp3'
             session['tempo'] = tempo
 
@@ -129,21 +135,15 @@ def results():
     tempo = session.get('tempo')
     return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
-@app.route('/cleanup', methods=['POST'])
-def cleanup():
-    # Remove files only after leaving the page
-    for filename in os.listdir(TEMPORARY_UPLOADS_FOLDER):
-        file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, filename)
-        if os.path.isfile(file_path):
-            try:
-                os.remove(file_path)
-            except OSError as e:
-                print(f"Error removing {file_path}: {e}")
-    return 'Cleanup done'
-
 @app.route('/temporary_uploads/<filename>')
 def serve_temp_file(filename):
     return send_from_directory(TEMPORARY_UPLOADS_FOLDER, filename)
+
+# Cleanup function can be called manually if needed, or left out completely
+@app.route('/cleanup', methods=['POST'])
+def cleanup():
+    # This function can be removed if you don't want any cleanup until the user leaves the page.
+    return 'Cleanup done'
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,3 +1,7 @@
+// Přidej tento flag pro sledování stavu analýzy
+let isAnalyzing = false;
+let progressInterval;
+
 document.getElementById('uploadForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
@@ -30,6 +34,8 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     xhr.onload = function() {
         document.getElementById('loading').style.display = 'none';
+        isAnalyzing = false; // Nastavit flag na false, když analýza skončí
+
         if (xhr.status >= 200 && xhr.status < 300) {
             const response = JSON.parse(xhr.responseText);
             if (response.error) {
@@ -48,52 +54,24 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
     };
 
     xhr.send(formData);
-});
 
-// Progress bar polling
-setInterval(function() {
-    fetch('/progress')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('loading-bar').querySelector('span').style.width = data.progress + '%';
-        });
-}, 1000);
-
-// Audio controls
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const gainNodes = {};
-
-const loadAudio = (source, label) => {
-    const audioElement = new Audio(source);
-    const sourceNode = audioContext.createMediaElementSource(audioElement);
-    const gainNode = audioContext.createGain();
-
-    sourceNode.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    gainNodes[label] = gainNode;
-
-    audioElement.play();
-
-    audioElement.addEventListener('ended', () => {
-        fetch('/cleanup', { method: 'POST' });
-    });
-};
-
-const setVolume = (label, volume) => {
-    if (gainNodes[label]) {
-        gainNodes[label].gain.setValueAtTime(volume, audioContext.currentTime);
+    // Nastav isAnalyzing a spusť polling
+    isAnalyzing = true;
+    if (!progressInterval) {
+        progressInterval = setInterval(function() {
+            if (isAnalyzing) {
+                fetch('/progress')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('loading-bar').querySelector('span').style.width = data.progress + '%';
+                        if (data.progress >= 100) {
+                            clearInterval(progressInterval);
+                            progressInterval = null; // Resetuj interval
+                        }
+                    });
+            } else {
+                clearInterval(progressInterval); // Ukončit polling, pokud není analýza aktivní
+            }
+        }, 2000);
     }
-};
-
-document.querySelectorAll('.volume-slider').forEach(slider => {
-    slider.addEventListener('input', function() {
-        const volume = parseFloat(this.value);
-        const label = this.dataset.track;
-        setVolume(label, volume);
-    });
-});
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', function() {
-    navigator.sendBeacon('/cleanup');
 });

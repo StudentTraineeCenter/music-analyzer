@@ -3,7 +3,6 @@ import time
 from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, session
 import librosa
 import numpy as np
-import yt_dlp
 import subprocess
 
 app = Flask(__name__)
@@ -23,6 +22,7 @@ def index():
 
 @app.route('/progress')
 def get_progress():
+    global progress
     return jsonify({'progress': progress})
 
 def is_file_free(filepath):
@@ -52,7 +52,6 @@ def analyze():
     progress = 0
 
     file = request.files.get('file')
-    youtube_link = request.form.get('youtubeLink')
     demucs_model = request.form.get('demucsModel', 'htdemucs_6s')
 
     file_path = None
@@ -60,32 +59,18 @@ def analyze():
         filename = file.filename
         file_path = os.path.join(UPLOADS_FOLDER, filename)
         file.save(file_path)
-        progress = 10
-    elif youtube_link:
-        try:
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(UPLOADS_FOLDER, '%(id)s.%(ext)s'),
-                'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}],
-                'noplaylist': True,
-                'nooverwrites': True,
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(youtube_link, download=True)
-                file_path = os.path.join(UPLOADS_FOLDER, f"{info_dict['id']}.mp3")
-
-            progress = 30
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        progress = 10  # Update progress after file is saved
 
     if file_path:
         try:
+            progress = 20  # Begin analysis
             y, sr = librosa.load(file_path, sr=None)
             tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
             tempo = float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item()
+            progress = 40  # Audio file loaded successfully
 
             subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
-            progress = 70
+            progress = 70  # Demucs finished processing
 
             time.sleep(2)  # Wait to ensure demucs has finished
 
@@ -95,7 +80,7 @@ def analyze():
                     src_path = os.path.join(separated_folder, f)
                     dest_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, f)
                     safe_rename(src_path, dest_path)
-            progress = 90
+            progress = 90  # Files successfully renamed
 
             output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'final_output.mp3')
             merge_command = [
@@ -115,7 +100,7 @@ def analyze():
             # Run merge command and check for errors
             try:
                 subprocess.run(merge_command, check=True)
-                progress = 100
+                progress = 100  # Analysis complete
             except subprocess.CalledProcessError as e:
                 print(f"Error merging audio files: {e}")
                 return jsonify({'error': 'Error merging audio files.'}), 500
@@ -127,7 +112,7 @@ def analyze():
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    return jsonify({'error': 'No file or link provided.'}), 400
+    return jsonify({'error': 'No file provided.'}), 400
 
 @app.route('/results')
 def results():
@@ -142,7 +127,6 @@ def serve_temp_file(filename):
 # Cleanup function can be called manually if needed, or left out completely
 @app.route('/cleanup', methods=['POST'])
 def cleanup():
-    # This function can be removed if you don't want any cleanup until the user leaves the page.
     return 'Cleanup done'
 
 if __name__ == "__main__":

@@ -6,14 +6,22 @@
     <title>Music Analyzer</title>
     <link rel="stylesheet" href="/static/styles.css">
     <style>
-        #loading {
-            display: none;
-            font-size: 1.2em;
-            text-align: center;
-            margin: 20px 0;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #212121;
+            color: #98FCFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
-        #loading-bar {
-            width: 100%;
+
+        #loadingContainer {
+            display: none; /* Skrýt loading bar */
+            width: 50%; /* Šířka loading baru */
             background-color: #f3f3f3;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -21,26 +29,35 @@
             margin-top: 10px;
             position: relative;
         }
-        #loading-bar span {
+
+        #loadingBar {
             display: block;
             height: 100%;
             background-color: #4caf50;
             width: 0;
             border-radius: 5px;
-            position: absolute;
-            top: 0;
-            left: 0;
             transition: width 0.4s;
         }
+
+        #loadingText {
+            display: none; /* Skrýt text */
+            font-size: 1.2em;
+            text-align: center;
+            margin: 20px 0;
+            color: #98FCFF; /* Změnit barvu textu, aby byl viditelný */
+        }
+
         .input-group {
             margin-bottom: 15px;
         }
+
         select, input[type="url"], input[type="file"] {
             width: 100%;
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #dddddd;
         }
+
         button {
             padding: 10px 15px;
             border: none;
@@ -49,9 +66,11 @@
             color: white;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         #error {
             color: red;
         }
@@ -63,26 +82,16 @@
 
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="input-group">
-            <input type="file" id="fileInput" name="file" accept="audio/*">
+            <input type="file" id="fileInput" name="file" accept="audio/*" required>
         </div>
-
-        <p>OR</p>
-
-        <div class="input-group">
-            <label for="youtubeLink">Enter YouTube link:</label>
-            <input type="url" id="youtubeLink" name="youtubeLink" placeholder="https://www.youtube.com/watch?v=...">
-        </div>
-
         <div>
             <button type="submit">Analyze</button>
         </div>
     </form>
 
-    <div id="loading">
-        Loading...
-        <div id="loading-bar">
-            <span></span>
-        </div>
+    <div id="loadingText">Loading...</div> <!-- Skrýt text -->
+    <div id="loadingContainer">
+        <div id="loadingBar"></div>
     </div>
     <div id="results"></div>
     <div id="error"></div>
@@ -92,35 +101,36 @@
         const form = document.getElementById('uploadForm');
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
-
-            document.getElementById('loading').style.display = 'block';
-            let progressBar = document.getElementById('loading-bar').querySelector('span');
-            progressBar.style.width = '0'; // Reset progress bar
-
+    
+            const loadingContainer = document.getElementById('loadingContainer');
+            const loadingText = document.getElementById('loadingText');
+            const progressBar = document.getElementById('loadingBar');
+    
+            loadingContainer.style.display = 'block'; 
+            loadingText.style.display = 'block'; 
+            progressBar.style.width = '0';
+    
             const formData = new FormData(form);
-            const response = await fetch('/analyze', {
-                method: 'POST',
-                body: formData
-            });
-
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+    
             if (response.ok) {
-                // Start progress tracking
                 const interval = setInterval(async () => {
-                    const progressResponse = await fetch('/progress'); // Assuming you have an endpoint for progress
+                    const progressResponse = await fetch('/progress');
                     const progressData = await progressResponse.json();
                     progressBar.style.width = progressData.progress + '%';
-
-                    if (progressData.progress === 100) {
+    
+                    if (progressData.progress >= 100) {
                         clearInterval(interval);
-                        window.location.href = '/results'; // Redirect to results page
+                        window.location.href = '/results'; 
                     }
-                }, 1000); // Check every second
+                }, 1000);
             } else {
                 const errorData = await response.json();
                 document.getElementById('error').innerText = errorData.error;
-                document.getElementById('loading').style.display = 'none'; // Hide loading on error
+                loadingContainer.style.display = 'none'; 
+                loadingText.style.display = 'none'; 
             }
         });
-    </script>
+    </script>    
 </body>
 </html>

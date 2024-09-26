@@ -70,13 +70,13 @@ button:hover {
     transform: scale(1.1); /* Zvětšení tlačítka */
 }
 
-
 #error {
     color: red;
 }
+
 #loadingContainer {
     margin-top: 20px;
-    width: 50%;
+    width: 30%;
     background-color: #e0e0e0;
     border-radius: 10px;
     overflow: hidden;
@@ -87,7 +87,7 @@ button:hover {
     width: 0%;
     height: 100%;
     background-color: #007dd1;
-    transition: width 0.3s ease;
+    transition: width 0.5s ease;  /* Dlouhý přechod pro loading bar */
 }
 
 #loadingText {
@@ -95,4 +95,20 @@ button:hover {
     margin-top: 10px;
     font-size: 18px;
     color: #000;
+}
+
+/* Responsive styling for smaller screens */
+@media (max-width: 600px) {
+    h1 {
+        font-size: 50px;  /* Menší velikost nadpisu pro mobily */
+    }
+
+    button {
+        font-size: 20px;  /* Menší velikost tlačítka pro mobily */
+        padding: 8px 16px;  /* Menší padding pro mobily */
+    }
+
+    input[type="file"], input[type="url"] {
+        font-size: 14px;  /* Menší font pro mobilní zařízení */
+    }
 }

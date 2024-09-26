@@ -1,4 +1,3 @@
-// Přidej tento flag pro sledování stavu analýzy
 let isAnalyzing = false;
 let progressInterval;
 
@@ -7,19 +6,15 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     const formData = new FormData(this);
     const fileInput = document.getElementById('fileInput').files.length > 0;
-    const youtubeLink = document.getElementById('youtubeLink').value.trim();
 
-    if (!fileInput && !youtubeLink) {
-        document.getElementById('error').innerText = 'Please provide a file or a YouTube link.';
+    if (!fileInput) {
+        document.getElementById('error').innerText = 'Please provide a file.';
         return;
     }
 
+    document.getElementById('error').innerText = ''; // Clear previous error
     document.getElementById('loading').style.display = 'block';
     document.getElementById('loading-bar').querySelector('span').style.width = '0%';
-
-    if (youtubeLink) {
-        formData.append('youtubeLink', youtubeLink);
-    }
 
     const xhr = new XMLHttpRequest();
 
@@ -34,7 +29,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     xhr.onload = function() {
         document.getElementById('loading').style.display = 'none';
-        isAnalyzing = false; // Nastavit flag na false, když analýza skončí
+        isAnalyzing = false; // Set flag to false when analysis is done
 
         if (xhr.status >= 200 && xhr.status < 300) {
             const response = JSON.parse(xhr.responseText);
@@ -55,7 +50,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
 
     xhr.send(formData);
 
-    // Nastav isAnalyzing a spusť polling
+    // Set isAnalyzing and start polling
     isAnalyzing = true;
     if (!progressInterval) {
         progressInterval = setInterval(function() {
@@ -66,11 +61,16 @@ document.getElementById('uploadForm').addEventListener('submit', function(event)
                         document.getElementById('loading-bar').querySelector('span').style.width = data.progress + '%';
                         if (data.progress >= 100) {
                             clearInterval(progressInterval);
-                            progressInterval = null; // Resetuj interval
+                            progressInterval = null; // Reset interval
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching progress:', error);
+                        clearInterval(progressInterval); // Stop interval on error
+                        progressInterval = null;
                     });
             } else {
-                clearInterval(progressInterval); // Ukončit polling, pokud není analýza aktivní
+                clearInterval(progressInterval); // Stop polling if analysis is not active
             }
         }, 2000);
     }

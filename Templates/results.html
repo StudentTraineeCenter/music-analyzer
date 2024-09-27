@@ -76,7 +76,7 @@
             </li>
         </ul>
         <audio id="audio-player" controls>
-            <source src="{{ audio_file_url }}" type="audio/mp3">
+            <source src="{{ mixed_audio_file_url }}" type="audio/mp3"> <!-- Načte rovnou mixovaný soubor -->
             Your browser does not support the audio element.
         </audio>
     </div>
@@ -84,14 +84,13 @@
     <script>
     const audioPlayer = document.getElementById('audio-player');
     const volumeControls = {
-    vocals: document.getElementById('volume-voice'),  // Opravený ID
-    guitar: document.getElementById('volume-guitar'),
-    bass: document.getElementById('volume-bass'),
-    piano: document.getElementById('volume-piano'),
-    drums: document.getElementById('volume-drums'),
-    other: document.getElementById('volume-other')
-};
-
+        vocals: document.getElementById('volume-voice'),
+        guitar: document.getElementById('volume-guitar'),
+        bass: document.getElementById('volume-bass'),
+        piano: document.getElementById('volume-piano'),
+        drums: document.getElementById('volume-drums'),
+        other: document.getElementById('volume-other')
+    };
 
     Object.keys(volumeControls).forEach(instrument => {
         volumeControls[instrument].addEventListener('input', function() {
@@ -114,11 +113,15 @@
             })
             .then(response => response.json())
             .then(data => {
-                audioPlayer.src = data.audio_url;  // Update audio source
-                audioPlayer.play();  // Play mixed audio
+                if (data.audio_url) {
+                    audioPlayer.src = data.audio_url;  // Update audio source with the new mix
+                    audioPlayer.play();  // Play the updated mix audio
+                }
             });
         });
     });
+
+    // Cleanup files when the user leaves the page
     window.addEventListener("beforeunload", function(event) {
         fetch("/cleanup", { method: "POST" });
     });

@@ -155,6 +155,34 @@ def cleanup_files():
     except Exception as e:
         print(f"Error cleaning up files: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/mix', methods=['POST'])
+def mix():
+    volume_settings = request.json
+    output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
+    
+    # Připrav příkaz ffmpeg pro míchání zvuku
+    mix_command = [
+        'ffmpeg',
+        '-y', 
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
+        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
+        '-filter_complex', f"[0:a]volume={volume_settings['voice']}[v0];[1:a]volume={volume_settings['guitar']}[v1];[2:a]volume={volume_settings['bass']}[v2];[3:a]volume={volume_settings['piano']}[v3];[4:a]volume={volume_settings['drums']}[v4];[5:a]volume={volume_settings['other']}[v5];[v0][v1][v2][v3][v4][v5]amerge=inputs=6",
+        '-ac', '2',
+        output_file_path
+    ]
+
+    try:
+        subprocess.run(mix_command, check=True)
+        return jsonify({'audio_url': url_for('serve_temp_file', filename='mixed_output.mp3', _external=True)})
+    except subprocess.CalledProcessError as e:
+        print(f"Error mixing audio files: {e}")
+        return jsonify({'error': 'Error mixing audio'}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

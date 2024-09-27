@@ -70,3 +70,4 @@ function startProgressPolling() {
         }, 2000); // Pollování každou sekundu
     }
 }
+

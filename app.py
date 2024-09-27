@@ -139,6 +139,22 @@ def results():
 def serve_temp_file(filename):
     return send_from_directory(TEMPORARY_UPLOADS_FOLDER, filename)
 
+UPLOADS_FOLDER = 'uploads'
+TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
+
+@app.route('/cleanup', methods=['POST'])
+def cleanup_files():
+    try:
+        # Odstranit soubory ve složkách
+        for folder in [UPLOADS_FOLDER, TEMPORARY_UPLOADS_FOLDER]:
+            for filename in os.listdir(folder):
+                file_path = os.path.join(folder, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -20,8 +20,8 @@
         }
 
         #loadingContainer {
-            display: none; /* Skrýt loading bar */
-            width: 50%; /* Šířka loading baru */
+            display: none;
+            width: 50%;
             background-color: #f3f3f3;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -40,11 +40,11 @@
         }
 
         #loadingText {
-            display: none; /* Skrýt text */
+            display: none;
             font-size: 1.2em;
             text-align: center;
             margin: 20px 0;
-            color: #98FCFF; /* Změnit barvu textu, aby byl viditelný */
+            color: #98FCFF;
         }
 
         .input-group {
@@ -78,7 +78,7 @@
 </head>
 <body>
     <h1>Music Analyzer</h1>
-    <p>Upload an MP3 file or provide a YouTube link to analyze instruments and tempo.</p>
+    <p>Upload an MP3 file to analyze instruments and tempo.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="input-group">
@@ -89,7 +89,7 @@
         </div>
     </form>
 
-    <div id="loadingText">Loading...</div> <!-- Skrýt text -->
+    <div id="loadingText">Loading...</div>
     <div id="loadingContainer">
         <div id="loadingBar"></div>
     </div>
@@ -98,39 +98,16 @@
 
     <script src="/static/app.js"></script>
     <script>
-        const form = document.getElementById('uploadForm');
-        form.addEventListener('submit', async function (event) {
-            event.preventDefault();
-    
-            const loadingContainer = document.getElementById('loadingContainer');
-            const loadingText = document.getElementById('loadingText');
-            const progressBar = document.getElementById('loadingBar');
-    
-            loadingContainer.style.display = 'block'; 
-            loadingText.style.display = 'block'; 
-            progressBar.style.width = '0';
-    
-            const formData = new FormData(form);
-            const response = await fetch('/analyze', { method: 'POST', body: formData });
-    
-            if (response.ok) {
-                const interval = setInterval(async () => {
-                    const progressResponse = await fetch('/progress');
-                    const progressData = await progressResponse.json();
-                    progressBar.style.width = progressData.progress + '%';
-    
-                    if (progressData.progress >= 100) {
-                        clearInterval(interval);
-                        window.location.href = '/results'; 
-                    }
-                }, 1000);
-            } else {
-                const errorData = await response.json();
-                document.getElementById('error').innerText = errorData.error;
-                loadingContainer.style.display = 'none'; 
-                loadingText.style.display = 'none'; 
-            }
-        });
+        function checkProgress() {
+            fetch('/progress')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('progressBar').value = data.progress;
+                if (data.progress === 100) {
+                    window.location.href = '/results';
+                }
+            });
+        }
     </script>    
 </body>
 </html>

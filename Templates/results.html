@@ -84,13 +84,14 @@
     <script>
     const audioPlayer = document.getElementById('audio-player');
     const volumeControls = {
-        vocals: document.getElementById('volume-vocals'),
-        guitar: document.getElementById('volume-guitar'),
-        bass: document.getElementById('volume-bass'),
-        piano: document.getElementById('volume-piano'),
-        drums: document.getElementById('volume-drums'),
-        other: document.getElementById('volume-other')
-    };
+    vocals: document.getElementById('volume-voice'),  // Opravený ID
+    guitar: document.getElementById('volume-guitar'),
+    bass: document.getElementById('volume-bass'),
+    piano: document.getElementById('volume-piano'),
+    drums: document.getElementById('volume-drums'),
+    other: document.getElementById('volume-other')
+};
+
 
     Object.keys(volumeControls).forEach(instrument => {
         volumeControls[instrument].addEventListener('input', function() {

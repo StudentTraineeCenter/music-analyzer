@@ -1,5 +1,5 @@
 {
-    "name": "Aplication",
+    "name": "Music Analyzer",
     "short_name": "FlaskPWA",
     "start_url": "/",
     "display": "standalone",

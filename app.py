@@ -1,7 +1,7 @@
 import os
 import time
 import threading
-from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, redirect
+from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, redirect, make_response
 import librosa
 import numpy as np
 import subprocess
@@ -19,6 +19,14 @@ tempo = None  # Global variable for tempo
 # Ensure the folders exist
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 os.makedirs(TEMPORARY_UPLOADS_FOLDER, exist_ok=True)
+
+@app.after_request
+def add_header(response):
+    response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/')
 def index():

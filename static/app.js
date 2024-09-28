@@ -77,4 +77,11 @@ document.querySelectorAll('.volume-slider').forEach(slider => {
         reloadAudio();
     });
 });
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').then(function(registration) {
+      console.log('Service worker registered with scope:', registration.scope);
+    }).catch(function(error) {
+      console.log('Service worker registration failed:', error);
+    });
+}
 

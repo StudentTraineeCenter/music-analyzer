@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template, url_for, send_from_d
 import librosa
 import numpy as np
 import subprocess
+import time
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -61,7 +62,6 @@ def analyze_file(file_path, demucs_model):
 
         separated_folder = os.path.join('separated', demucs_model, os.path.splitext(os.path.basename(file_path))[0])
         if os.path.exists(separated_folder):
-            # Use rename_file_if_needed for renaming files
             rename_file_if_needed(os.path.join(separated_folder, 'vocals.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'))
             rename_file_if_needed(os.path.join(separated_folder, 'guitar.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'))
             rename_file_if_needed(os.path.join(separated_folder, 'bass.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'))
@@ -71,10 +71,11 @@ def analyze_file(file_path, demucs_model):
 
         progress = 90  # Files successfully renamed
 
-        output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'final_output.mp3')
+        # Vytvoření mixed_output.mp3 se standardní hlasitostí
+        output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
         merge_command = [
             'ffmpeg',
-            '-y',  # Automatically overwrite existing files
+            '-y',  # Overwrite existing files
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
@@ -86,13 +87,10 @@ def analyze_file(file_path, demucs_model):
             output_file_path
         ]
 
-        # Run merge command and check for errors
         try:
             subprocess.run(merge_command, check=True)
             progress = 100  # Analysis complete
-
-            # Save to global variables for results page
-            audio_file_url = 'final_output.mp3'
+            audio_file_url = 'mixed_output.mp3'  # Set the mixed output as the audio URL
         except subprocess.CalledProcessError as e:
             print(f"Error merging audio files: {e}")
             progress = 0
@@ -100,6 +98,7 @@ def analyze_file(file_path, demucs_model):
     except Exception as e:
         print(f"Error during analysis: {e}")
         progress = 0
+
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -131,8 +130,8 @@ def results():
     global audio_file_url, tempo
     if not audio_file_url or tempo is None:
         return redirect(url_for('index'))  # Redirect back if no results
-
-    audio_file_url = url_for('serve_temp_file', filename='final_output.mp3')  # Generate the correct URL for the audio file
+    current_time = time.time()  # Získej aktuální čas
+    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Přidej cache busting
     return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
 @app.route('/temporary_uploads/<filename>')

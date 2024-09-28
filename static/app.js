@@ -70,4 +70,11 @@ function startProgressPolling() {
         }, 2000); // Pollování každou sekundu
     }
 }
+// Příklad volání po změně posuvníku hlasitosti
+document.querySelectorAll('.volume-slider').forEach(slider => {
+    slider.addEventListener('input', () => {
+        // Po změně hlasitosti obnovíme audio
+        reloadAudio();
+    });
+});
 

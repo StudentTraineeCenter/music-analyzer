@@ -76,55 +76,70 @@
             </li>
         </ul>
         <audio id="audio-player" controls>
-            <source src="{{ mixed_audio_file_url }}" type="audio/mp3"> <!-- Načte rovnou mixovaný soubor -->
+            <source id="audio-source" src="{{ audio_file_url }}" type="audio/mp3">
             Your browser does not support the audio element.
-        </audio>
+        </audio>              
     </div>
 
     <script>
-    const audioPlayer = document.getElementById('audio-player');
-    const volumeControls = {
-        vocals: document.getElementById('volume-voice'),
-        guitar: document.getElementById('volume-guitar'),
-        bass: document.getElementById('volume-bass'),
-        piano: document.getElementById('volume-piano'),
-        drums: document.getElementById('volume-drums'),
-        other: document.getElementById('volume-other')
-    };
+        function reloadAudio() {
+            const audioPlayer = document.getElementById("audio-player");
+            const audioSource = document.getElementById("audio-source");
 
-    Object.keys(volumeControls).forEach(instrument => {
-        volumeControls[instrument].addEventListener('input', function() {
-            const volumeValues = {
-                voice: volumeControls.vocals.value,
-                guitar: volumeControls.guitar.value,
-                bass: volumeControls.bass.value,
-                piano: volumeControls.piano.value,
-                drums: volumeControls.drums.value,
-                other: volumeControls.other.value
-            };
+            // Aktualizuj URL s cache bust parametrem
+            const newSrc = audioSource.src.split('?')[0] + "?cache_bust=" + new Date().getTime();
+            audioSource.src = newSrc;
 
-            // Send volume settings to the server for mixing
-            fetch('/mix', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(volumeValues)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.audio_url) {
-                    audioPlayer.src = data.audio_url;  // Update audio source with the new mix
-                    audioPlayer.play();  // Play the updated mix audio
-                }
+            // Načti nové audio
+            audioPlayer.load();
+            audioPlayer.play();
+        }
+
+        const audioPlayer = document.getElementById('audio-player');
+        const volumeControls = {
+            vocals: document.getElementById('volume-voice'),
+            guitar: document.getElementById('volume-guitar'),
+            bass: document.getElementById('volume-bass'),
+            piano: document.getElementById('volume-piano'),
+            drums: document.getElementById('volume-drums'),
+            other: document.getElementById('volume-other')
+        };
+
+        // Odesílá hodnoty hlasitosti na server, jakmile se změní nějaký posuvník
+        Object.keys(volumeControls).forEach(instrument => {
+            volumeControls[instrument].addEventListener('input', function() {
+                const volumeValues = {
+                    voice: volumeControls.vocals.value,
+                    guitar: volumeControls.guitar.value,
+                    bass: volumeControls.bass.value,
+                    piano: volumeControls.piano.value,
+                    drums: volumeControls.drums.value,
+                    other: volumeControls.other.value
+                };
+
+                // Pošle na server hodnoty hlasitosti a aktualizuje mix
+                fetch('/mix', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(volumeValues)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.audio_url) {
+                        // Aktualizuje src pro nový mix a přehraje ho
+                        audioPlayer.src = data.audio_url + "?cache_bust=" + new Date().getTime();
+                        audioPlayer.play();
+                    }
+                });
             });
         });
-    });
 
-    // Cleanup files when the user leaves the page
-    window.addEventListener("beforeunload", function(event) {
-        fetch("/cleanup", { method: "POST" });
-    });
+        // Čistí soubory, když uživatel opustí stránku
+        window.addEventListener("beforeunload", function(event) {
+            fetch("/cleanup", { method: "POST" });
+        });
     </script>
 </body>
 </html>

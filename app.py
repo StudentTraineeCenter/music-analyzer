@@ -48,7 +48,7 @@ def is_file_free(filepath):
 
 def rename_file_if_needed(source_path, target_path):
     if os.path.exists(target_path):
-        os.remove(target_path)  # Remove the file if it already exists
+        os.remove(target_path)
     try:
         os.rename(source_path, target_path)
     except Exception as e:

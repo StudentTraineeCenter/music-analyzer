@@ -1,13 +1,11 @@
+from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, redirect
 import os
 import time
 import threading
-from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, redirect, make_response
-import librosa
-import numpy as np
 import subprocess
-import time
+from Backend.audio_processor import analyze_file  # Adjust based on what you need
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../Frontend/templates', static_folder='../Frontend/static')
 app.secret_key = 'your_secret_key'
 
 UPLOADS_FOLDER = 'uploads'
@@ -36,77 +34,6 @@ def index():
 def get_progress():
     global progress
     return jsonify({'progress': progress})
-
-def is_file_free(filepath):
-    for _ in range(20):
-        try:
-            with open(filepath, 'a'):
-                return True
-        except IOError:
-            time.sleep(0.5)
-    return False
-
-def rename_file_if_needed(source_path, target_path):
-    if os.path.exists(target_path):
-        os.remove(target_path)
-    try:
-        os.rename(source_path, target_path)
-    except Exception as e:
-        print(f"Error renaming {source_path} to {target_path}: {e}")
-
-def analyze_file(file_path, demucs_model):
-    global progress, audio_file_url, tempo
-    try:
-        progress = 20  # Begin analysis
-        y, sr = librosa.load(file_path, sr=None)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        tempo = float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item()
-        progress = 40  # Audio file loaded successfully
-
-        subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
-        progress = 70  # Demucs finished processing
-
-        time.sleep(2)  # Wait to ensure demucs has finished
-
-        separated_folder = os.path.join('separated', demucs_model, os.path.splitext(os.path.basename(file_path))[0])
-        if os.path.exists(separated_folder):
-            rename_file_if_needed(os.path.join(separated_folder, 'vocals.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'))
-            rename_file_if_needed(os.path.join(separated_folder, 'guitar.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'))
-            rename_file_if_needed(os.path.join(separated_folder, 'bass.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'))
-            rename_file_if_needed(os.path.join(separated_folder, 'piano.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'))
-            rename_file_if_needed(os.path.join(separated_folder, 'drums.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'))
-            rename_file_if_needed(os.path.join(separated_folder, 'other.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'))
-
-        progress = 90  # Files successfully renamed
-
-        # Vytvoření mixed_output.mp3 se standardní hlasitostí
-        output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
-        merge_command = [
-            'ffmpeg',
-            '-y',  # Overwrite existing files
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
-            '-filter_complex', 'amerge=inputs=6',
-            '-ac', '2',
-            output_file_path
-        ]
-
-        try:
-            subprocess.run(merge_command, check=True)
-            progress = 100  # Analysis complete
-            audio_file_url = 'mixed_output.mp3'  # Set the mixed output as the audio URL
-        except subprocess.CalledProcessError as e:
-            print(f"Error merging audio files: {e}")
-            progress = 0
-
-    except Exception as e:
-        print(f"Error during analysis: {e}")
-        progress = 0
-
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -138,21 +65,18 @@ def results():
     global audio_file_url, tempo
     if not audio_file_url or tempo is None:
         return redirect(url_for('index'))  # Redirect back if no results
-    current_time = time.time()  # Získej aktuální čas
-    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Přidej cache busting
+    current_time = time.time()  # Get current time
+    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Add cache busting
     return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
 @app.route('/temporary_uploads/<filename>')
 def serve_temp_file(filename):
     return send_from_directory(TEMPORARY_UPLOADS_FOLDER, filename)
 
-UPLOADS_FOLDER = 'uploads'
-TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
-
 @app.route('/cleanup', methods=['POST'])
 def cleanup_files():
     try:
-        # Odstranit soubory ve složkách
+        # Remove files in the folders
         for folder in [UPLOADS_FOLDER, TEMPORARY_UPLOADS_FOLDER]:
             for filename in os.listdir(folder):
                 file_path = os.path.join(folder, filename)
@@ -162,13 +86,13 @@ def cleanup_files():
     except Exception as e:
         print(f"Error cleaning up files: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
 @app.route('/mix', methods=['POST'])
 def mix():
     volume_settings = request.json
     output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
     
-    # Připrav příkaz ffmpeg pro míchání zvuku
+    # Prepare ffmpeg command for mixing sound
     mix_command = [
         'ffmpeg',
         '-y', 
@@ -189,7 +113,6 @@ def mix():
     except subprocess.CalledProcessError as e:
         print(f"Error mixing audio files: {e}")
         return jsonify({'error': 'Error mixing audio'}), 500
-
 
 if __name__ == "__main__":
     app.run(debug=True)

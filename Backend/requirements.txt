@@ -1,6 +1,6 @@
 Flask==2.2.5
+tensorflow
 librosa
 numpy==1.21.0
 spleeter
-tensorflow
 demucs

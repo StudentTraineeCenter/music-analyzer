@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, render_template, url_for, send_from_directory, redirect
 import os
+import sys
 import time
 import threading
 import subprocess
 from Backend.audio_processor import analyze_file  # Adjust based on what you need
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = Flask(__name__, template_folder='../Frontend/templates', static_folder='../Frontend/static')
 app.secret_key = 'your_secret_key'
 

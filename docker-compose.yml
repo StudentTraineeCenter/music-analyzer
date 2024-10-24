@@ -1,19 +1,22 @@
-version: '3'
-services:
-  frontend:
-    build:
-      context: ./Frontend
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./Frontend:/app
-    depends_on:
-      - backend
+version: '3.8'
 
+services:
   backend:
     build:
       context: ./Backend
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     volumes:
-      - ./Backend:/app
+      - ./uploads:/app/uploads
+      - ./temporary_uploads:/app/temporary_uploads
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./temporary_uploads:/app/temporary_uploads

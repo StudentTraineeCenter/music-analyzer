@@ -1,18 +1,15 @@
-# Backend Dockerfile
+# Backend/Dockerfile
 FROM python:3.9-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
 # Copy requirements.txt and install dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend source code
-COPY . .
+# Copy the application code
+COPY audio_processor.py .
 
-# Expose the backend port (adjust if needed)
-EXPOSE 5000
-
-# Command to run the backend
+# Command to run the application
 CMD ["python", "audio_processor.py"]

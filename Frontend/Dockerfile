@@ -1,23 +1,19 @@
+# Frontend/Dockerfile
 FROM python:3.9-slim
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libatlas-base-dev \
-    && pip install --no-cache-dir numpy==1.21.0 \
-    && pip install --no-cache-dir spleeter
-
-# Set your working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy your requirements file
+# Copy requirements.txt and install dependencies
 COPY requirements.txt .
-
-# Install remaining dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your application files
-COPY . .
+# Copy the application code
+COPY app.py .
 
-# Command to run your app
+# Copy static and templates directories
+COPY static ./static
+COPY Templates ./Templates
+
+# Command to run the application
 CMD ["python", "app.py"]

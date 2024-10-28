@@ -1,22 +1,21 @@
-version: '3.8'
-
 services:
   backend:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile
+    build: ./Backend
     ports:
-      - "5000:5000"
+      - "5001:5001"  # Exponuje backend port
+    command: ["python", "audio_processor.py"]
     volumes:
-      - ./uploads:/app/uploads
-      - ./temporary_uploads:/app/temporary_uploads
+      - ./Backend:/app  # Přidání volume pro backend, aby se změny ihned projevily
 
   frontend:
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile
+    build: ./Frontend
     ports:
-      - "3000:3000"
+      - "5000:5000"
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:5001  # URL pro přístup k backendu
     volumes:
-      - ./uploads:/app/uploads
-      - ./temporary_uploads:/app/temporary_uploads
+      - ./Frontend:/app  # Přidání volume pro frontend
+      - ./Backend:/app/Backend  # Zde přidáváme backend pro frontend
+

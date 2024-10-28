@@ -1,22 +1,24 @@
-# Frontend Dockerfile
+# Backend Dockerfile
 
-# Use the appropriate base image
+# Use an appropriate base image
 FROM python:3.9-slim
 
 # Set the working directory
 WORKDIR /app
+COPY . /app
 
-# Copy the requirements file
+# Copy the requirements file and install dependencies
 COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire app directory
+# Copy the entire Backend directory
 COPY . .
 
 # Expose the appropriate port (if necessary)
-EXPOSE 3000
+EXPOSE 5000
 
 # Command to run your application
-CMD ["python", "app.py"]
+CMD ["python", "audio_processor.py"]
+
+ENV CUDA_VISIBLE_DEVICES=""
+

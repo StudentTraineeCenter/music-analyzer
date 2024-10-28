@@ -4,7 +4,15 @@ import sys
 import time
 import threading
 import subprocess
-from Backend.audio_processor import analyze_file  # Adjust based on what you need
+import requests  # Import requests for making API calls to backend
+import tensorflow as tf
+
+# Potlačení varování
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 = all messages, 1 = filter out INFO messages, 2 = filter out WARNING messages, 3 = filter out ERROR messages
+
+# Dále můžete nastavit GPU pro TensorFlow, pokud je potřeba
+tf.debugging.set_log_device_placement(False)
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = Flask(__name__, template_folder='../Frontend/templates', static_folder='../Frontend/static')
 app.secret_key = 'your_secret_key'
@@ -44,20 +52,19 @@ def analyze():
     file = request.files.get('file')
     demucs_model = request.form.get('demucsModel', 'htdemucs_6s')
 
-    file_path = None
     if file:
         filename = file.filename
         file_path = os.path.join(UPLOADS_FOLDER, filename)
         file.save(file_path)
         progress = 10  # Update progress after file is saved
 
-    if file_path:
-        # Start analysis in a new thread
-        analysis_thread = threading.Thread(target=analyze_file, args=(file_path, demucs_model))
-        analysis_thread.start()
+        # Send POST request to the backend for analysis
+        response = requests.post("http://backend:5001/analyze", files={'file': file}, data={'demucsModel': demucs_model})
 
-        # Return immediately to avoid blocking
-        return jsonify({'message': 'Analysis started'}), 202
+        if response.status_code == 202:
+            return jsonify({'message': 'Analysis started'}), 202
+        else:
+            return jsonify({'error': 'Analysis failed'}), 500
 
     return jsonify({'error': 'No file provided.'}), 400
 

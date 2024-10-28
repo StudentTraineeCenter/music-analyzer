@@ -1,19 +1,21 @@
-# Frontend/Dockerfile
+# Frontend Dockerfile
+
+# Use an appropriate base image
 FROM python:3.9-slim
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy requirements.txt and install dependencies
+RUN pip install --no-cache-dir tensorflow  # only CPU version
+# Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
-COPY app.py .
+# Copy the entire Frontend directory
+COPY . .
 
-# Copy static and templates directories
-COPY static ./static
-COPY Templates ./Templates
+# Expose the appropriate port (if necessary)
+EXPOSE 3000
 
-# Command to run the application
+# Command to run your application
 CMD ["python", "app.py"]

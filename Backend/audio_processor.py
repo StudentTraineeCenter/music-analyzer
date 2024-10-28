@@ -1,8 +1,11 @@
 import os
 import time
+import json
 import subprocess
 import librosa
 import numpy as np
+from http.server import SimpleHTTPRequestHandler
+import socketserver
 from spleeter.separator import Separator
 
 TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
@@ -27,7 +30,7 @@ def rename_file_if_needed(source_path, target_path):
     except Exception as e:
         print(f"Error renaming {source_path} to {target_path}: {e}")
 
-def analyze_file(file_path, demucs_model):
+def analyze_file(file_path, demucs_model='htdemucs_6s'):
     global progress, audio_file_url, tempo
     try:
         progress = 20  # Begin analysis
@@ -83,3 +86,44 @@ def analyze_file(file_path, demucs_model):
     except Exception as e:
         print(f"Error during file analysis: {e}")
         progress = 100  # Analysis failed
+
+class MusicAnalysisHandler(SimpleHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            data = json.loads(post_data.decode('utf-8'))
+            file_path = data.get("file_path")
+            demucs_model = data.get("demucs_model", 'htdemucs_6s')
+            
+            if file_path and os.path.exists(file_path):
+                analyze_file(file_path, demucs_model)
+                
+                # Return JSON response
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                
+                response = json.dumps({
+                    "progress": progress,
+                    "audio_file_url": audio_file_url,
+                    "tempo": tempo
+                })
+                self.wfile.write(response.encode('utf-8'))
+            else:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'{"error": "Invalid file path"}')
+        except Exception as e:
+            self.send_response(500)
+            self.end_headers()
+            error_message = json.dumps({"error": str(e)})
+            self.wfile.write(error_message.encode('utf-8'))
+
+# Spuštění serveru na portu 5001
+if __name__ == "__main__":
+    HOST, PORT = "0.0.0.0", 5001
+    with socketserver.TCPServer((HOST, PORT), MusicAnalysisHandler) as httpd:
+        print(f"Serving on port {PORT}")
+        httpd.serve_forever()

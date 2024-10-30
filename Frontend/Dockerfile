@@ -19,3 +19,5 @@ EXPOSE 3000
 
 # Command to run your application
 CMD ["python", "app.py"]
+
+ENV TF_CPP_MIN_LOG_LEVEL=2

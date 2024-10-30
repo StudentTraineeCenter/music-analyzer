@@ -21,4 +21,5 @@ EXPOSE 5000
 CMD ["python", "audio_processor.py"]
 
 ENV CUDA_VISIBLE_DEVICES=""
+ENV TF_CPP_MIN_LOG_LEVEL=2
 

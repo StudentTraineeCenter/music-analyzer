@@ -1,5 +1,3 @@
-
-
 librosa
-numpy
+numpy<2
 spleeter

@@ -1,5 +1,5 @@
 
 
 librosa
-numpy==1.21.0
+numpy
 spleeter

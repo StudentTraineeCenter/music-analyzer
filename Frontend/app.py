@@ -7,6 +7,7 @@ import subprocess
 import requests  # Import requests for making API calls to backend
 import tensorflow as tf
 
+
 # Potlačení varování
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 = all messages, 1 = filter out INFO messages, 2 = filter out WARNING messages, 3 = filter out ERROR messages
 

@@ -15,7 +15,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 = all messages, 1 = filter out INF
 tf.debugging.set_log_device_placement(False)
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-app = Flask(__name__, template_folder='../Frontend/templates', static_folder='../Frontend/static')
+app = Flask(__name__, template_folder='templates', static_folder='static')
+
 app.secret_key = 'your_secret_key'
 
 UPLOADS_FOLDER = 'uploads'

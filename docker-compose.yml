@@ -2,10 +2,10 @@ services:
   backend:
     build: ./Backend
     ports:
-      - "5001:5001"  # Exponuje backend port
+      - "5001:5001"  # Expose backend on port 5001
     command: ["python", "audio_processor.py"]
     volumes:
-      - ./Backend:/app  # Přidání volume pro backend, aby se změny ihned projevily
+      - ./Backend:/app  # Volume for backend to reflect code changes
 
   frontend:
     build: ./Frontend
@@ -14,8 +14,6 @@ services:
     depends_on:
       - backend
     environment:
-      - BACKEND_URL=http://backend:5001  # URL pro přístup k backendu
+      - BACKEND_URL=http://backend:5001  # Backend URL for API access
     volumes:
-      - ./Frontend:/app  # Přidání volume pro frontend
-      - ./Backend:/app/Backend  # Zde přidáváme backend pro frontend
-
+      - ./Frontend:/app  # Volume for frontend to reflect code changes

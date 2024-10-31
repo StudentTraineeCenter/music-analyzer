@@ -7,6 +7,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 RUN pip install --no-cache-dir tensorflow  # only CPU version
+RUN mkdir analyze && echo "create analyze folder"
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -16,6 +17,8 @@ COPY . .
 
 # Expose the appropriate port (if necessary)
 EXPOSE 3000
+
+
 
 # Command to run your application
 CMD ["python", "app.py"]

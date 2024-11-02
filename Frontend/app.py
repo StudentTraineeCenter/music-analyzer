@@ -2,21 +2,9 @@ from flask import Flask, request, jsonify, render_template, url_for, send_from_d
 import os
 import sys
 import time
-import threading
-import subprocess
 import requests  # Import requests for making API calls to backend
-import tensorflow as tf
 
-
-# Potlačení varování
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 = all messages, 1 = filter out INFO messages, 2 = filter out WARNING messages, 3 = filter out ERROR messages
-
-# Dále můžete nastavit GPU pro TensorFlow, pokud je potřeba
-tf.debugging.set_log_device_placement(False)
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = Flask(__name__, template_folder='templates', static_folder='static')
-
 app.secret_key = 'your_secret_key'
 
 UPLOADS_FOLDER = 'uploads'
@@ -55,15 +43,18 @@ def analyze():
     demucs_model = request.form.get('demucsModel', 'htdemucs_6s')
 
     if file:
-        filename = file.filename
-        file_path = os.path.join(UPLOADS_FOLDER, filename)
-        file.save(file_path)
+        temp_file_path = os.path.join(UPLOADS_FOLDER, file.filename)
+        file.save(temp_file_path)
         progress = 10  # Update progress after file is saved
 
         # Send POST request to the backend for analysis
-        response = requests.post("http://backend:5001/analyze", files={'file': file}, data={'demucsModel': demucs_model})
+        backend_response = requests.post(
+            "http://backend:5001/analyze", 
+            files={'file': open(temp_file_path, 'rb')}, 
+            data={'demucsModel': demucs_model}
+        )
 
-        if response.status_code == 202:
+        if backend_response.status_code == 202:
             return jsonify({'message': 'Analysis started'}), 202
         else:
             return jsonify({'error': 'Analysis failed'}), 500
@@ -75,8 +66,6 @@ def results():
     global audio_file_url, tempo
     if not audio_file_url or tempo is None:
         return redirect(url_for('index'))  # Redirect back if no results
-    current_time = time.time()  # Get current time
-    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Add cache busting
     return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
 @app.route('/temporary_uploads/<filename>')
@@ -96,33 +85,6 @@ def cleanup_files():
     except Exception as e:
         print(f"Error cleaning up files: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/mix', methods=['POST'])
-def mix():
-    volume_settings = request.json
-    output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
-    
-    # Prepare ffmpeg command for mixing sound
-    mix_command = [
-        'ffmpeg',
-        '-y', 
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
-        '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
-        '-filter_complex', f"[0:a]volume={volume_settings['voice']}[v0];[1:a]volume={volume_settings['guitar']}[v1];[2:a]volume={volume_settings['bass']}[v2];[3:a]volume={volume_settings['piano']}[v3];[4:a]volume={volume_settings['drums']}[v4];[5:a]volume={volume_settings['other']}[v5];[v0][v1][v2][v3][v4][v5]amerge=inputs=6",
-        '-ac', '2',
-        output_file_path
-    ]
-
-    try:
-        subprocess.run(mix_command, check=True)
-        return jsonify({'audio_url': url_for('serve_temp_file', filename='mixed_output.mp3', _external=True)})
-    except subprocess.CalledProcessError as e:
-        print(f"Error mixing audio files: {e}")
-        return jsonify({'error': 'Error mixing audio'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

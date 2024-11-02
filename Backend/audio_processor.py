@@ -121,7 +121,6 @@ class MusicAnalysisHandler(SimpleHTTPRequestHandler):
             error_message = json.dumps({"error": str(e)})
             self.wfile.write(error_message.encode('utf-8'))
 
-# Spuštění serveru na portu 5001
 if __name__ == "__main__":
     HOST, PORT = "0.0.0.0", 5001
     with socketserver.TCPServer((HOST, PORT), MusicAnalysisHandler) as httpd:

@@ -6,6 +6,9 @@ services:
     command: ["python", "audio_processor.py"]
     volumes:
       - ./Backend:/app  # Volume for backend to reflect code changes
+      - ./Frontend/uploads:/app/uploads  # Shared volume for uploads
+      - ./Frontend/temporary_uploads:/app/temporary_uploads  # Shared volume for temporary uploads
+      - ./Frontend/analyze:/app/analyze  # Shared volume for analyze
 
   frontend:
     build: ./Frontend
@@ -17,3 +20,6 @@ services:
       - BACKEND_URL=http://backend:5001  # Backend URL for API access
     volumes:
       - ./Frontend:/app  # Volume for frontend to reflect code changes
+      - ./Frontend/uploads:/app/uploads  # Shared volume for uploads
+      - ./Frontend/temporary_uploads:/app/temporary_uploads  # Shared volume for temporary uploads
+      - ./Frontend/analyze:/app/analyze  # Shared volume for analyze

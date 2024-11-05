@@ -1,3 +1,0 @@
-librosa
-numpy==1.21.6
-spleeter

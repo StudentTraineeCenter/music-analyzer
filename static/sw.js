@@ -4,7 +4,7 @@ self.addEventListener('install', function(event) {
             return cache.addAll([
                 '/',
                 '/static/styles.css',  // Add the paths to your static files that should be cached
-                '/static/scripts.js'
+                '/static/app.js'
             ]);
         })
     );

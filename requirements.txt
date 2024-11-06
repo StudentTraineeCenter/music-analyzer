@@ -1,3 +1,4 @@
 Flask
 librosa
 tensorflow-cpu==2.13.0
+demucs

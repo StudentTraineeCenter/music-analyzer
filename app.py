@@ -13,15 +13,9 @@ import shutil
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-UPLOADS_FOLDER = 'uploads'
-TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
 progress = 0  # Global variable for tracking progress
 audio_file_url = None  # Global variable for audio file URL
 tempo = None  # Global variable for tempo
-
-# Ensure the folders exist
-os.makedirs(UPLOADS_FOLDER, exist_ok=True)
-os.makedirs(TEMPORARY_UPLOADS_FOLDER, exist_ok=True)
 
 @app.after_request
 def add_header(response):

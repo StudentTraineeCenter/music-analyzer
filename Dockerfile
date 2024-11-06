@@ -1,5 +1,15 @@
 FROM python:3.9-slim
 
+
+RUN git clone --depth 1 --branch v4.0.1 --single-branch https://github.com/facebookresearch/demucs /lib/demucs
+WORKDIR /lib/demucs
+# Install dependencies
+RUN python3 -m pip install -e . --no-cache-dir
+# Run once to ensure demucs works and trigger the default model download
+RUN python3 -m demucs -d cpu test.mp3 
+# Cleanup output - we just used this to download the model
+RUN rm -r separated
+
 WORKDIR /app
 
 COPY requirements.txt requirements.txt

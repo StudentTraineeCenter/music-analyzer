@@ -4,7 +4,6 @@ WORKDIR /app
 RUN pip install --upgrade pip
 COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
-RUN pip3 install -U ffmpeg
 RUN python3 -m pip install -U demucs
 
 #RUN pip install --no-cache-dir tensorflow  # only CPU version

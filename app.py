@@ -78,18 +78,26 @@ def analyze_file(file_path, demucs_model):
         # Vytvoření mixed_output.mp3 se standardní hlasitostí
         output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
         merge_command = [
-            'ffmpeg',
-            '-y',  # Overwrite existing files
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
-            '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
-            '-filter_complex', 'amerge=inputs=6',
-            '-ac', '2',
-            output_file_path
-        ]
+    'ffmpeg',
+    '-y',  # Overwrite existing files
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
+    '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
+    '-filter_complex',
+    '[0:a]aformat=channel_layouts=stereo[v0];'
+    '[1:a]aformat=channel_layouts=stereo[v1];'
+    '[2:a]aformat=channel_layouts=stereo[v2];'
+    '[3:a]aformat=channel_layouts=stereo[v3];'
+    '[4:a]aformat=channel_layouts=stereo[v4];'
+    '[5:a]aformat=channel_layouts=stereo[v5];'
+    '[v0][v1][v2][v3][v4][v5]amerge=inputs=6',
+    '-ac', '2',  # Ensure output is stereo
+    output_file_path
+]
+
 
         try:
             subprocess.run(merge_command, check=True)

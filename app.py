@@ -8,20 +8,14 @@ import subprocess
 import time
 import signal
 import sys
-import shutil
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-UPLOADS_FOLDER = 'uploads'
-TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
 progress = 0  # Global variable for tracking progress
 audio_file_url = None  # Global variable for audio file URL
 tempo = None  # Global variable for tempo
-
-# Ensure the folders exist
-os.makedirs(UPLOADS_FOLDER, exist_ok=True)
-os.makedirs(TEMPORARY_UPLOADS_FOLDER, exist_ok=True)
 
 @app.after_request
 def add_header(response):
@@ -86,14 +80,21 @@ def analyze_file(file_path, demucs_model):
         output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
         merge_command = [
             'ffmpeg',
-            '-y',  # Overwrite existing files
+            '-y',
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'guitar.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'bass.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
             '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
-            '-filter_complex', 'amerge=inputs=6',
+            '-filter_complex',
+            '[0:a]volume=1.0,aformat=channel_layouts=stereo[v0];'
+            '[1:a]volume=1.0,aformat=channel_layouts=stereo[v1];'
+            '[2:a]volume=1.0,aformat=channel_layouts=stereo[v2];'
+            '[3:a]volume=1.0,aformat=channel_layouts=stereo[v3];'
+            '[4:a]volume=1.0,aformat=channel_layouts=stereo[v4];'
+            '[5:a]volume=1.0,aformat=channel_layouts=stereo[v5];'
+            '[v0][v1][v2][v3][v4][v5]amerge=inputs=6,aformat=channel_layouts=stereo',
             '-ac', '2',
             output_file_path
         ]
@@ -168,10 +169,10 @@ def cleanup_files():
     
 @app.route('/mix', methods=['POST'])
 def mix():
-    volume_settings = request.json
+    volume_settings = request.json  # Ensure this is a dictionary with required keys
     output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
     
-    # Připrav příkaz ffmpeg pro míchání zvuku
+    # Create the mix command with formatted volumes
     mix_command = [
         'ffmpeg',
         '-y', 
@@ -181,8 +182,19 @@ def mix():
         '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'piano.wav'),
         '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'drums.wav'),
         '-i', os.path.join(TEMPORARY_UPLOADS_FOLDER, 'other.wav'),
-        '-filter_complex', f"[0:a]volume={volume_settings['voice']}[v0];[1:a]volume={volume_settings['guitar']}[v1];[2:a]volume={volume_settings['bass']}[v2];[3:a]volume={volume_settings['piano']}[v3];[4:a]volume={volume_settings['drums']}[v4];[5:a]volume={volume_settings['other']}[v5];[v0][v1][v2][v3][v4][v5]amerge=inputs=6",
-        '-ac', '2',
+        '-filter_complex', (
+            f"[0:a]volume={volume_settings['voice']},aformat=channel_layouts=stereo[v0];"
+            f"[1:a]volume={volume_settings['guitar']},aformat=channel_layouts=stereo[v1];"
+            f"[2:a]volume={volume_settings['bass']},aformat=channel_layouts=stereo[v2];"
+            f"[3:a]volume={volume_settings['piano']},aformat=channel_layouts=stereo[v3];"
+            f"[4:a]volume={volume_settings['drums']},aformat=channel_layouts=stereo[v4];"
+            f"[5:a]volume={volume_settings['other']},aformat=channel_layouts=stereo[v5];"
+            "[v0][v1][v2][v3][v4][v5]amerge=inputs=6[aout]"
+        ),
+        '-map', '[aout]', 
+        '-ac', '2', 
+        '-c:a', 'libmp3lame', 
+        '-b:a', '192k', 
         output_file_path
     ]
 

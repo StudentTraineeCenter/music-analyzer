@@ -1,0 +1,21 @@
+
+version: '3.8'
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - spleeter
+  spleeter:
+    build:
+      context: ./spleeter_service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./spleeter_service/output:/app/output

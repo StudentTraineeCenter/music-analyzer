@@ -2,18 +2,19 @@ services:
   flask:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile  # Specifies the Dockerfile in the root
     ports:
-      - "5000:5000"
+      - "5000:5000"  # Expose Flask on port 5000
     volumes:
-      - .:/app
+      - .:/app  # Mount the entire project directory into the container
     depends_on:
-      - spleeter
+      - spleeter  # Ensure Spleeter starts before Flask
+
   spleeter:
     build:
       context: ./spleeter_service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile  # Specifies Dockerfile in the spleeter_service directory
     ports:
-      - "5001:5001"
+      - "5001:5001"  # Expose Spleeter on port 5001
     volumes:
-      - ./spleeter_service/output:/app/output
+      - ./spleeter_service/output:/app/output  # Map the output directory for results

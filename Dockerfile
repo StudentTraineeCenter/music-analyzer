@@ -16,9 +16,6 @@ RUN python3 -m pip install -U demucs
 COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Create necessary directories directly in the Docker image
-RUN mkdir -p /app/uploads /app/temporary_uploads
-
 # Copy application files
 COPY . .
 

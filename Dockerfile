@@ -22,8 +22,8 @@ COPY . .
 # Expose Flask port
 EXPOSE 5000
 
-# Command to run your application
-CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0"]
+# Command to run your application with Gunicorn for clearing temp. folders
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
 
 # Suppress TensorFlow logging
 ENV TF_CPP_MIN_LOG_LEVEL=2

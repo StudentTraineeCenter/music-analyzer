@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install Spleeter and required dependencies
 RUN apt-get update && apt-get install -y ffmpeg && apt-get clean
-RUN pip install --no-cache-dir spleeter flask
+RUN pip install --no-cache-dir spleeter
 
 COPY spleeter_service.py .
 

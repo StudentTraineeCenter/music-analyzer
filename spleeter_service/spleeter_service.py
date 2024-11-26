@@ -19,7 +19,7 @@ class SeparatorHandler(BaseHTTPRequestHandler):
                 environ={'REQUEST_METHOD': 'POST'}
             )
 
-            # Check if file is provided
+            # is the file provided?
             if 'file' not in form:
                 self.send_error(400, "No file uploaded")
                 return
@@ -39,11 +39,11 @@ class SeparatorHandler(BaseHTTPRequestHandler):
 
             response = {}
             try:
-                # Use Spleeter for general separation
+                # Use Spleeter
                 spleeter_command = ['spleeter', 'separate', '-i', filename, '-o', output_dir]
                 subprocess.run(spleeter_command, check=True)
 
-                # Use Demucs for guitar stem
+                # Use Demucs for guitar only
                 demucs_command = ['demucs', filename, '--two-stems', 'guitar']
                 subprocess.run(demucs_command, check=True)
 

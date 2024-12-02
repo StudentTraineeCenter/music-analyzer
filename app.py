@@ -71,7 +71,7 @@ def analyze_file(file_path, demucs_model):
         progress = 20  # Begin analysis
         y, sr = librosa.load(file_path, sr=None)
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        tempo = float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item()
+        tempo = round(float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item(), 2)
         progress = 40  # Audio file loaded successfully
 
         subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)

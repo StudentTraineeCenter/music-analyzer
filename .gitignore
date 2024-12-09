@@ -1,3 +1,4 @@
 seperated/*
 uploads/*
 temporary_uploads/*
+__pycache__/*

@@ -17,8 +17,17 @@ progress = 0  # Global variable for tracking progress
 audio_file_url = None  # Global variable for audio file URL
 tempo = None  # Global variable for tempo
 
+# Directories for uploads
+UPLOADS_FOLDER = 'uploads'
+TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
+
+# Ensure directories exist
+os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+os.makedirs(TEMPORARY_UPLOADS_FOLDER, exist_ok=True)
+
 @app.after_request
 def add_header(response):
+    # Prevent caching
     response.headers['Service-Worker-Allowed'] = '/'
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
@@ -27,14 +36,17 @@ def add_header(response):
 
 @app.route('/')
 def index():
+    # Render homepage
     return render_template('index.html')
 
 @app.route('/progress')
 def get_progress():
     global progress
+    # Return current progress
     return jsonify({'progress': progress})
 
 def is_file_free(filepath):
+    # Check if file is ready to use
     for _ in range(20):
         try:
             with open(filepath, 'a'):
@@ -44,6 +56,7 @@ def is_file_free(filepath):
     return False
 
 def rename_file_if_needed(source_path, target_path):
+    # Rename file if needed
     if os.path.exists(target_path):
         os.remove(target_path)
     try:
@@ -52,19 +65,20 @@ def rename_file_if_needed(source_path, target_path):
         print(f"Error renaming {source_path} to {target_path}: {e}")
 
 def analyze_file(file_path, demucs_model):
+    # Perform analysis
     global progress, audio_file_url, tempo
     try:
         progress = 20  # Begin analysis
         y, sr = librosa.load(file_path, sr=None)
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        tempo = float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item()
+        tempo = round(float(tempo) if not isinstance(tempo, np.ndarray) else tempo.item(), 2)
         progress = 40  # Audio file loaded successfully
 
         subprocess.run(['demucs', '-n', demucs_model, file_path], check=True)
         progress = 70  # Demucs finished processing
 
         time.sleep(2)  # Wait to ensure demucs has finished
-
+        # Move separated files to temporary folder
         separated_folder = os.path.join('separated', demucs_model, os.path.splitext(os.path.basename(file_path))[0])
         if os.path.exists(separated_folder):
             rename_file_if_needed(os.path.join(separated_folder, 'vocals.wav'), os.path.join(TEMPORARY_UPLOADS_FOLDER, 'vocals.wav'))
@@ -76,7 +90,7 @@ def analyze_file(file_path, demucs_model):
 
         progress = 90  # Files successfully renamed
 
-        # Vytvoření mixed_output.mp3 se standardní hlasitostí
+        # creation of mixed_output.mp3
         output_file_path = os.path.join(TEMPORARY_UPLOADS_FOLDER, 'mixed_output.mp3')
         merge_command = [
             'ffmpeg',
@@ -114,6 +128,7 @@ def analyze_file(file_path, demucs_model):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+     # Start file analysis
     global progress
     progress = 0
 
@@ -142,8 +157,8 @@ def results():
     global audio_file_url, tempo
     if not audio_file_url or tempo is None:
         return redirect(url_for('index'))  # Redirect back if no results
-    current_time = time.time()  # Získej aktuální čas
-    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Přidej cache busting
+    current_time = time.time()  # Get time
+    audio_file_url = f"/temporary_uploads/mixed_output.mp3?cache_bust={current_time}"  # Add cache busting
     return render_template('results.html', audio_file_url=audio_file_url, tempo=tempo)
 
 @app.route('/temporary_uploads/<filename>')
@@ -156,7 +171,7 @@ TEMPORARY_UPLOADS_FOLDER = 'temporary_uploads'
 @app.route('/cleanup', methods=['POST'])
 def cleanup_files():
     try:
-        # Odstranit soubory ve složkách
+        # Clear temporary folders
         for folder in [UPLOADS_FOLDER, TEMPORARY_UPLOADS_FOLDER]:
             for filename in os.listdir(folder):
                 file_path = os.path.join(folder, filename)

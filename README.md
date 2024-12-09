@@ -1,2 +1,15 @@
 # Music_Analyzer
-Analyze music for tempo, instruments and notes
+Analyze music for tempo, instruments, and notes in the future...
+
+The project aims to create a web application for music analysis. It will analyze songs, separate them into tracks (vocals, guitar, bass, drums, piano, and other instruments), identify tempo, and extract musical information like chords and sheet music. The application will feature a highly interactive and user-friendly interface suitable for musicians and casual users, offering basic and advanced modes.
+
+Key Features:
+
+Input Options: Users can upload audio files (mp3, wav) or provide YouTube links, which will be converted to audio files automatically.
+Track Separation: Songs are split into six tracks for individual control and editing.
+Customizable Outputs: Users can adjust the volume of individual tracks, mute specific instruments, or isolate certain sounds.
+Advanced Editing: Includes tempo adjustments, pitch shifting, chord display, and conversion to sheet music.
+Export Options: Edited tracks can be downloaded in various formats.
+Enhanced Interface: The application is designed to be accessible via a website, mobile, and desktop apps, with intuitive controls for novices and detailed tools for professionals.
+Technical Tools:
+The project uses Python, JavaScript, Flask, and libraries like Librosa, Spleeter, and Demucs. It is developed using Visual Studio Code and managed through GitHub.
